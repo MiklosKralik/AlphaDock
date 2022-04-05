@@ -6,6 +6,7 @@ from AlphaDock import dir_path, cache_folder_path, get_full_path
 from pymol import cmd
 from pymol import stored
 import pandas as pd
+import json
 
 def convert_to_pdbqt(outFile_name, file_path, obabel):
     file_path = get_full_path(file_path)
@@ -55,7 +56,7 @@ def find_bounding_box(molecule_path, padding=1.0):
 
 def run_dock(cache, vina, protein_name, ligand_name, job_name, num_modes):
     # use vina to dock protein and define docking parameters
-    dump_data = 'outputs'
+    dump_data = cache_folder_path
     box_attributes = cache['box_attributes']
     protein_path = cache['cached_outfile_protein_stripped']
     ligand_path = cache['cached_outfile_ligand_pdbqt']
@@ -111,8 +112,60 @@ def collect_surroundings(radius, protein_path, cache, job_name):
     # parse log file for affinity vaues
     with open(cache['dock_log_path']) as f:
         log_file = f.readlines()
-    #print(log_file[-1:])
+
+    # adding all information containing lines to file
+    info_lines = []
+
+    for line in log_file[-2::-1]:
+        info_lines.append(line)
+        if line.split(' ')[3] == '1':
+            break
+    # invert as is in the wrong order
+    info_lines = info_lines[::-1]
+    #print(info_lines[0].split(' '))
+
+    affinity = {}
+    rmsd_lb = {}
+    rmsd_ub = {}
+
+    for line in info_lines:
+        line_split = []
+
+        for i in line.split(' '):
+            if i != '':
+                line_split.append(i)
+
+
+        affinity[int(line_split[0])] = float(line_split[1])
+        rmsd_lb[int(line_split[0])] = float(line_split[2])
+        rmsd_ub[int(line_split[0])] = float(line_split[3][:-1])
+
+    for state in df_surroundings['ligand_state'].unique():
+        df_surroundings.loc[df_surroundings['ligand_state']==state, 'affinity'] = affinity[state]
+        df_surroundings.loc[df_surroundings['ligand_state']==state, 'rmsd_lb'] = rmsd_lb[state]
+        df_surroundings.loc[df_surroundings['ligand_state']==state, 'rmsd_ub'] = rmsd_ub[state]
+
+    print(df_surroundings.info())
     return df_surroundings
+
+def cache_cache(cache, job_name, action):
+    # create full cache so different jobs are not mixed up
+    cache_path = cache_folder_path + '/' + f'cache{job_name}.json'
+
+    if os.path.exists(cache_path):
+        if action == 'read':
+            with open(cache_path, 'r+') as file:
+                cache = json.load(file)
+        if action == 'clear':
+            os.remove(cache_path)
+
+    if action == 'write':
+        with open(cache_path, 'w+') as file:
+            cache_obj = json.dumps(cache)
+            file.write(cache_obj)
+
+    return cache
+
 
 if __name__ == '__main__':
     print(dir_path)
