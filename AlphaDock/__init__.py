@@ -13,6 +13,6 @@ def clear_cache_folder():
     files = glob.glob(cache_folder_path + '/*')
     print('removing files -------')
     for f in files:
-        if f.split('.')[-1] in ['txt', 'pdb', 'pdbqt', 'json']:
+        if f.split('.')[-1] in ['txt', 'pdb', 'pdbqt', 'csv', 'json', 'jpeg']:
             print(f)
             os.remove(f)

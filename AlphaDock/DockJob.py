@@ -4,6 +4,8 @@ from AlphaDock.utils import *
 from AlphaDock import dir_path, cache_folder_path, get_full_path
 import pandas as pd
 import json
+import random
+from shutil import copy2
 #from __init__ import dir_path, cache_folder_path, get_full_path
 
 
@@ -70,14 +72,17 @@ class DJ:
 		print(box_attributes)
 		self.Cache = cache_cache(self.Cache, self.JobName, action='write')
 
-	def dock(self, num_modes=9):
+	def dock(self, num_modes=9, exhaustiveness=8,
+	 seed=random.randint(1, 1000000), energy_range=3):
 		self.Cache = cache_cache(self.Cache, self.JobName, action='read')
 
 		# uses a set of parameters as a dictionary for docking
 		out_path, log_path = run_dock(self.Cache, self.Vina,
-		 					self.ProteinName, self.LigandName, self.JobName, num_modes)
+		 					self.ProteinName, self.LigandName, self.JobName, num_modes=num_modes,
+							exhaustiveness=exhaustiveness, seed=seed, energy_range=energy_range)
 		self.Cache['dock_out_path'] = out_path
 		self.Cache['dock_log_path'] = log_path
+		self.Cache['num_modes'] = num_modes
 		self.Cache = cache_cache(self.Cache, self.JobName, action='write')
 
 
@@ -85,7 +90,23 @@ class DJ:
 		self.Cache = cache_cache(self.Cache, self.JobName, action='read')
 		df_surroundings = collect_surroundings(radius, self.ProteinPath, self.Cache, self.JobName)
 		print(df_surroundings)
+		df_path = cache_folder_path + '/' + '_'.join([self.JobName, self.ProteinName, self.LigandName]) + '.csv'
+		df_surroundings.to_csv(df_path, index=False)
+		self.Cache['df_path'] = df_path
+		self.Cache = cache_cache(self.Cache, self.JobName, action='write')
+
+	def plot(self, show=False):
+		self.Cache = cache_cache(self.Cache, self.JobName, action='read')
+		fig_path = plot_function(self.Cache, self.JobName, self.ProteinName, self.LigandName, show=show)
+		# add path to cache and extract_cache
+		print(fig_path)
+		self.Cache['fig_path'] = fig_path
 		self.Cache = cache_cache(self.Cache, self.JobName, action='write')
 
 	def clear_cache(self):
 		self.Cache = cache_cache(self.Cache, self.JobName, action='clear')
+
+	def extract_cache(self, destination):
+		copy2(self.Cache['dock_out_path'], destination)
+		copy2(self.Cache['df_path'], destination)
+		copy2(self.Cache['fig_path'], destination)
