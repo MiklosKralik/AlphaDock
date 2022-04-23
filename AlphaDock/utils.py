@@ -66,7 +66,7 @@ def run_dock(cache, vina, protein_name, ligand_name, job_name, num_modes=9,
     out_path_full = dump_data + '/' + '_'.join([job_name, protein_name, ligand_name]) + '.pdb'
     log_path_full = dump_data + '/' + '_'.join([job_name, protein_name, ligand_name]) + '.txt'
 
-    command = [vina, '--receptor', protein_path,
+    command = ['vina', '--receptor', protein_path,
     '--ligand', ligand_path,
     '--center_x', box_attributes['cenX'],
     '--center_y', box_attributes['cenY'],

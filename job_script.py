@@ -6,10 +6,9 @@ import os
 
 # reproducible
 seed = 10550962
-protein_paths = ['MSM7_MCE.pdb', 'MTB4_permease_MCE.pdb', 'MSM7_MCE_C.pdb',
-                 'MTB4_permease_MCE_C.pdb', 'MTB4_MCE.pdb', 'MTB4_MCE_C.pdb']
+protein_paths = ['MSM7_MCE.pdb']
 
-ligand_paths = ['CHOL.sdf', 'PA.sdf', 'PG.sdf']
+ligand_paths = ['cholesterol.sdf']
 j = 1
 
 for protein in protein_paths:
@@ -18,7 +17,7 @@ for protein in protein_paths:
     for ligand in ligand_paths:
         ligand = 'structures/' + ligand
         clear_cache_folder()
-        Job = DJ(protein, ligand, str(j), vina='AlphaDock/vina')
+        Job = DJ(protein, ligand, str(j), vina='vina')
         Job.to_pdbqt()
         Job.strip_protein()
         Job.box(padding=1.0)
